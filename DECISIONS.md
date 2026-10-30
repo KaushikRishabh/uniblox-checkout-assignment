@@ -47,10 +47,11 @@ a key, or try a different key for an already purchased cart.
 **Options considered:** Treat cart ID alone as the retry key; accept an optional
 key; require a key and preserve successful request fingerprints; store all failures.
 
-**Choice:** Require `Idempotency-Key` and globally store successful `(key,
-fingerprint(cartId, couponCode), orderId)` tuples. Normalize absent/null coupons to
+**Choice:** Require `Idempotency-Key` and globally store a successful checkout
+record containing `cartId`, `couponCode` and `orderId` for each key. Compare the
+stored cart and coupon directly on retry. Normalize absent/null coupons to
 null. Check the retry record before checking cart closure or current coupon state.
-Replay returns the exact original order body; a conflicting fingerprint returns
+Replay returns the exact original order body; a different stored cart or coupon returns
 409. A separate `cart.orderId` guard prevents a new key from checking out a closed
 cart. Failure responses do not retain keys.
 
@@ -197,6 +198,35 @@ can remain a coherent synchronous transaction within the timebox.
 provider idempotency keys, verified webhooks and an outbox/saga or compensation
 model. Never simply insert `await charge()` inside this synchronous design.
 
+## Decision: Prefer explicit steps for candidate readability
+
+**Context:** The original implementation was compact, but chained expressions,
+short private names and compressed reporting loops made the invariants harder for
+a beginner to trace during review.
+
+**Options considered:** Leave the compact code; add comments around every expression;
+introduce a service/repository framework; expand the flow with descriptive names,
+ordinary loops and a few focused synchronous helpers.
+
+**Choice:** Use `#getOpenCart`, `#buildOrderLines`, `#checkInventory` and
+`#getAvailableCoupon` for separate checkout steps. Keep the complete commit block
+visible inside `checkout`. Compare the stored cart/coupon fields directly instead
+of encoding them into a JSON fingerprint. Build report totals with ordinary loops,
+and validate product edits on a local copy before replacing the stored product.
+Separate JSON parsing from body collection, with flat endpoint handling and named
+validated inputs. Use comments for the reasons behind ordering and arithmetic.
+
+**Why:** A longer sequence of named steps is easier to explain than nested
+operators. A new abstraction layer would add navigation rather than understanding.
+Explicit code still needs the same validation and synchronous transaction boundary.
+
+**Consequences:** More lines, fewer dense expressions. API fields, error precedence,
+money rules, coupon accounting and single-process limitations remain unchanged.
+The refactor keeps AI disclosure; simpler style does not imply manual authorship.
+Regression assertions cover a product patch failing on its last field and closed
+cart snapshot prices with current stock. Old/new HTTP comparison scenarios check
+the outward contract as well as the repository's concurrency tests.
+
 ## Multiple instances and production evolution
 
 Use PostgreSQL as the shared authority. Persist orders, order lines, carts, products,
@@ -237,6 +267,12 @@ checking a happy-path CRUD sequence. Validation evidence and actual elapsed time
 are recorded in WORK_LOG.md. Candidate understanding has **not** been verified by
 the agent: before submission, the candidate should run the walkthrough, explain
 the commit boundary, and modify a business rule without relying on this document.
+
+After the candidate requested easier code, Codex also refactored dense expressions
+into explicit steps and replaced the encoded retry fingerprint with direct intent
+fields. The side-by-side comparison of 88 HTTP responses and the same concurrency
+suite validated that this readability change preserved outward behavior. This work
+and its additional elapsed time are disclosed in WORK_LOG.md.
 
 ## With two more hours
 

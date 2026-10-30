@@ -12,11 +12,16 @@ await once(server, 'listening');
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
 async function call(method: string, path: string, body: unknown = undefined, key?: string) {
-  return fetch(base + path, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...(key ? { 'Idempotency-Key': key } : {}) },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (key) {
+    headers['Idempotency-Key'] = key;
+  }
+
+  const requestOptions: RequestInit = { method, headers };
+  if (body !== undefined) {
+    requestOptions.body = JSON.stringify(body);
+  }
+  return fetch(base + path, requestOptions);
 }
 
 async function cart(items: [string, number][]) {

@@ -17,19 +17,29 @@ The order is the purchased snapshot. The cart is an editable intent until its
 `orderId` is set. A coupon is a milestone grant with a single optional redemption
 link. Reports derive from these records, not separately incremented money counters.
 
-## Trace one checkout
+## Trace the simpler implementation
 
 1. In `http.ts`, find the checkout route. It awaits body completion before entering
    the store. The key comes from a header, the optional coupon from JSON.
-2. In `Store.checkout`, find the key fingerprint. A successful retry returns before
+2. In `Store.checkout`, find `previousCheckout`, `sameCart` and `sameCoupon`. The
+   stored cart/coupon fields directly identify the original request. A successful
+   retry returns before
    checking the cart or coupon again. Explain why reversing that order breaks
    retries for a closed cart and a redeemed coupon.
-3. Find `#openCart`, inventory validation and coupon validation. No state has changed
+3. Find `#getOpenCart`, `#checkInventory` and `#getAvailableCoupon`. No state has changed
    if any of these throws. A shortage in the last line cannot consume earlier lines.
-4. Explain `(gross * BigInt(percent) + 50n) / 100n`. Example: five cents at 10%
+4. Find `calculateDiscountCents`. It first multiplies gross cents by the percentage,
+   then adds 50 before dividing by 100. Example: five cents at 10%
    is half a cent, rounded up to one cent. A 100% coupon produces zero net.
-5. Find the commit comment and all five mutations: inventory, coupon, cart, order,
+5. Find the `Atomic commit starts here` comment and all five mutations: inventory,
+   coupon, cart, order,
    retry record. Explain why adding external I/O here would require a redesign.
+
+For the surrounding code, `cart()` uses an explicit open/closed branch,
+`updateProduct()` edits a copy and saves it only after validation, and `report()`
+uses ordinary loops with named totals. `requireInteger`, `requireText` and
+`requirePriceCents` reject invalid inputs. None of these readability changes remove
+the original safeguards or make the AI-assisted work manually authored.
 
 ## Predict the race outcomes
 

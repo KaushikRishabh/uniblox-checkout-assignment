@@ -47,3 +47,34 @@ Known boundaries: volatile process-local storage, no multi-instance coordination
 no auth/payments, no retention/pagination, and synchronous report scans. The current
 requested backend scope is implemented; candidate review and authorized submission
 remain outstanding.
+
+## Readability refactor on 2026-10-30
+
+- Began at **01:44:18 UTC** after the candidate asked for easier-to-read Uniblox code.
+- Replaced compact private names and chained expressions with descriptive helpers,
+  explicit branches and ordinary loops. Checkout keeps the whole synchronous commit
+  block visible; no async storage operations or external calls were introduced.
+- Successful retry records now hold cart ID, coupon code and order ID directly,
+  with explicit same-cart and same-coupon checks instead of a JSON-encoded fingerprint.
+- Expanded product edits on a temporary copy, separated JSON parsing from stream
+  collection, flattened endpoint handling and simplified demo request construction.
+- Preserved API/status/error contracts, validation order, snapshot semantics, exact
+  money arithmetic, milestone accounting and all original single-process limitations.
+- Strengthened regressions for failure on the last field of a multi-field product
+  patch and closed-cart names/prices with current available inventory.
+- Node 26.0.0: `npm run check` and `npm run demo` passed.
+- Node 22.18.0: strict type checking, ESLint, all 15 tests and the demo passed.
+  Type checking/lint/demo were repeated after the final demo readability edit.
+- Compared the original commit e699369 with the refactor in five separate HTTP
+  scenarios. All **88 response contracts** matched after normalizing generated IDs
+  and timestamps: cart/pricing/retries (14), delayed rewards/rounding/report reads (27),
+  validation/media/path errors (13), atomic failures/repair (19), and large/zero money (15).
+- The previously reported reviewer's five test scripts were not present in this
+  workspace; they are not represented as rerun here. The separate five-scenario
+  comparison above and the repository suite were executed in this run.
+- `git diff --check` passed. No required behavior was intentionally changed.
+
+Refactor implementation, review and validation completed by **2026-10-30 01:53:25 UTC**,
+approximately **9 additional minutes** of AI-assisted elapsed work. Initial work
+remains the separately recorded 11 minutes. Packaging/private saving are additional;
+no part is presented as manual candidate authorship or candidate understanding.

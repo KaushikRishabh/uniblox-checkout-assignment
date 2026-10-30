@@ -45,6 +45,9 @@ test('live prices and availability are revalidated; committed order and closed c
   store.updateProduct('pen', { unitPriceCents: '999', name: 'Later pen' });
   assert.equal(store.order(order.id).items[0]?.name, 'New pen');
   assert.equal(store.cart(id).grossCents, '410');
+  assert.equal(store.cart(id).items[0]?.name, 'New pen');
+  assert.equal(store.cart(id).items[0]?.unitPriceCents, '205');
+  assert.equal(store.cart(id).items[0]?.availableInventory, 0);
   assert.equal(store.products().find(p => p.id === 'pen')?.inventory, 0);
   expectCode(() => store.addItem(id, 'pen', 1), 'CART_CHECKED_OUT');
   expectCode(() => store.setItem(id, 'pen', 1), 'CART_CHECKED_OUT');
@@ -165,6 +168,12 @@ test('invalid config and mixed invalid product patch fail without partial mutati
   const store = new Store();
   const before = store.products();
   expectCode(() => store.updateProduct('pen', { name: 'Changed', unitPriceCents: '1.5' }), 'VALIDATION_ERROR');
+  assert.deepEqual(store.products(), before);
+  expectCode(() => store.updateProduct('pen', {
+    name: 'Changed',
+    unitPriceCents: '500',
+    inventory: -1,
+  }), 'VALIDATION_ERROR');
   assert.deepEqual(store.products(), before);
   const id = filled(store, 'pen', 1_000_000);
   expectCode(() => store.addItem(id, 'pen', 1), 'VALIDATION_ERROR');
