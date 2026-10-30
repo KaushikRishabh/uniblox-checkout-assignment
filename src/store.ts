@@ -27,7 +27,7 @@ export interface Order {
   cartId: string;
   sequence: number;
   createdAt: string;
-  currency: 'INR';
+  currency: 'USD';
   items: OrderLine[];
   grossCents: string;
   discountCents: string;
@@ -132,7 +132,7 @@ export class Store {
     const lines = order?.items ?? this.#lines(cart);
     return structuredClone({
       id: cart.id, status: cart.orderId ? 'CHECKED_OUT' : 'OPEN', orderId: cart.orderId,
-      currency: 'INR', items: lines.map(line => ({ ...line, availableInventory: this.#product(line.productId).inventory })),
+      currency: 'USD', items: lines.map(line => ({ ...line, availableInventory: this.#product(line.productId).inventory })),
       grossCents: order?.grossCents ?? this.#gross(lines).toString(),
     });
   }
@@ -214,7 +214,7 @@ export class Store {
     const discount = (gross * BigInt(percent) + 50n) / 100n;
     const order: Order = {
       id: randomUUID(), cartId, sequence: this.#orders.size + 1, createdAt: new Date().toISOString(),
-      currency: 'INR', items: lines, grossCents: gross.toString(), discountCents: discount.toString(),
+      currency: 'USD', items: lines, grossCents: gross.toString(), discountCents: discount.toString(),
       netCents: (gross - discount).toString(), couponCode, discountPercent: percent,
     };
     // Commit section. Every business validation and allocation of the order is above.
@@ -266,7 +266,7 @@ export class Store {
     const coupons = this.coupons();
     const redeemed = coupons.filter(coupon => coupon.redeemedByOrderId !== null).length;
     return {
-      currency: 'INR', successfulOrders: this.#orders.size,
+      currency: 'USD', successfulOrders: this.#orders.size,
       purchasedQuantityByProduct: [...this.#products.keys()].map(productId => ({ productId, quantity: purchased.get(productId) ?? 0 })),
       grossRevenueCents: gross.toString(), totalDiscountsCents: discount.toString(), netRevenueCents: (gross - discount).toString(),
       coupons: { generated: coupons.length, available: coupons.length - redeemed, redeemed, codes: coupons },

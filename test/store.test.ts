@@ -55,6 +55,7 @@ test('successful idempotency replays exact order; conflicting keys and independe
   const store = new Store();
   const id = filled(store);
   const first = store.checkout(id, 'request-1');
+  assert.equal(first.order.currency, 'USD');
   const retry = store.checkout(id, 'request-1', null);
   assert.deepEqual(retry.order, first.order);
   assert.equal(retry.replayed, true);
@@ -125,6 +126,14 @@ test('BigInt money is exact above Number safe range, half-cent rounds up and 100
   const full = new Store({ milestoneEvery: 1, discountPercent: 100 });
   full.checkout(filled(full), 'earn');
   assert.equal(full.checkout(filled(full), 'free', full.generateCoupon().code).order.netCents, '0');
+  const zero = new Store({ milestoneEvery: 1 });
+  zero.updateProduct('pen', { unitPriceCents: '0' });
+  assert.equal(zero.checkout(filled(zero), 'zero').order.netCents, '0');
+  const zeroCoupon = zero.generateCoupon();
+  const freeProduct = zero.checkout(filled(zero), 'zero-coupon', zeroCoupon.code).order;
+  assert.equal(freeProduct.discountCents, '0');
+  assert.equal(zero.report().successfulOrders, 2);
+  assert.equal(zero.coupons()[0]?.redeemedByOrderId, freeProduct.id);
 });
 
 test('reports reconcile with immutable orders and coupons, and returned values cannot mutate internal state', () => {
