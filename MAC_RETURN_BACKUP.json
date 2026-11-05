@@ -1,0 +1,9 @@
+{
+  "purpose": "Personal source backup before Mac return",
+  "original_head": "0013b4fda532b652e693e3404ecff43dc9583afc",
+  "original_branch": "main",
+  "excluded": [],
+  "history_screened": true,
+  "workflow_restore": "Files under .backup-workflows/ belong under .github/workflows/ when intentionally enabling CI.",
+  "dependency_restore": "Dependency folders, compiled artifacts and model packages are excluded; restore using project manifests and provenance docs."
+}
